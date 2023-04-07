@@ -1,4 +1,4 @@
-/* $OpenBSD: auth2-none.c,v 1.22 2018/07/09 21:35:50 markus Exp $ */
+/* $OpenBSD: auth2-none.c,v 1.25 2023/03/05 05:34:09 dtucker Exp $ */
 /*
  * Copyright (c) 2000 Markus Friedl.  All rights reserved.
  *
@@ -44,7 +44,6 @@
 #include "log.h"
 #include "misc.h"
 #include "servconf.h"
-#include "compat.h"
 #include "ssh2.h"
 #include "ssherr.h"
 #ifdef GSSAPI
@@ -59,24 +58,21 @@ extern ServerOptions options;
 static int none_enabled = 1;
 
 static int
-userauth_none(struct ssh *ssh)
+userauth_none(struct ssh *ssh, const char *method)
 {
 	int r;
 
 	none_enabled = 0;
 	if ((r = sshpkt_get_end(ssh)) != 0)
-		fatal("%s: %s", __func__, ssh_err(r));
-
-	/* no password authentication in Android. */
-#if !defined(ANDROID)
+		fatal_fr(r, "parse packet");
 	if (options.permit_empty_passwd && options.password_authentication)
 		return (PRIVSEP(auth_password(ssh, "")));
-#endif
 	return (0);
 }
 
 Authmethod method_none = {
 	"none",
+	NULL,
 	userauth_none,
 	&none_enabled
 };
